@@ -3,18 +3,24 @@ import socket
 import threading
 
 IP=socket.gethostname()
-Port=4466
+Port=4476
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
 SERVER_DATA_PATH="server_data"
+file_text=""
 
 def handle_client(conn,addr):
     print(f"[New CONNECTION] {addr} connected.")
     conn.send("OK@Welcome to the File Server".encode(FORMAT))
 
     while True:
-        data=conn.recv(SIZE).decode(FORMAT)
+        data=conn.recv(SIZE).decode()
+        if(data.split("@")=="UPLOAD"):
+            print("Receiving second File")
+            file_text=conn.recv(SIZE).decode(FORMAT)
+            print("Text of second file")
+            print(file_text.decode(FORMAT))
         data=data.split("@")
         cmd=data[0]
         if(cmd=="HELP"):
@@ -39,13 +45,25 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
         elif cmd=="UPLOAD":
-            name=data[1]
-            text=data[2]
-            filepath=os.path.join(SERVER_DATA_PATH,name)
-            with open(filepath,"w") as f:
-                f.write(text)
-            send_data="OK@File uploaded."
-            conn.send(send_data.encode(FORMAT))
+                client_data = data[1].split(",")
+                file_name = client_data[0]
+                file_size = int(client_data[1])
+                filepath = os.path.join(SERVER_DATA_PATH, file_name)
+                received_size=0
+                output_file=b''
+                print("File Name:"+file_name)
+                print(f"File Size:{file_size}")
+                while received_size<file_size:
+                    file_data=conn.recv(SIZE)
+                    print("inside loop")
+                    output_file+=file_data
+                    received_size+=len(file_data)
+                    print(file_data)
+                print(f"received size:{received_size}")
+                with open(filepath, "wb") as f:
+                    f.write(output_file)
+                send_data="OK@File uploaded."
+                conn.send(send_data.encode(FORMAT))
 
         elif cmd=="DELETE":
             files=os.listdir(SERVER_DATA_PATH)
