@@ -63,7 +63,19 @@ def main():
                 count += len(file_data)
            f.close()
 
+        elif cmd=="DOWNLOAD":
+            ##Download filename directory 
+            fname = data[1]
+            path = data[2]
+            
+            outputpath=os.path.join(path,fname)         #output path for the ne file
 
+            #with open(f"{filepath}","r") as f:
+            #    text=f.read()
+            #clientdata,data.txt
+            #filename=path.split('/')[-1]
+            send_data=f"{cmd}@{fname}@{path}@{text}"
+            client.send(send_data.encode(FORMAT))
 
         elif cmd=="DELETE":
             client.send(f"{cmd}@{data[1]}".encode(FORMAT))

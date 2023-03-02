@@ -28,6 +28,7 @@ def handle_client(conn,addr):
             send_data="OK@"
             send_data+="LIST: List all the files from the server.\n"
             send_data+="UPLOAD <path>:Upload a file to the server.\n"
+            send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
             send_data+="DELETE <filename>: Delete a file from the server.\n"
             send_data+="LOGOUT: Disconnect from the server.\n"
             send_data+="HELP:List all the commands."
@@ -78,6 +79,21 @@ def handle_client(conn,addr):
                 send_data="OK@File uploaded."
                 conn.send(send_data.encode(FORMAT))
 
+        elif cmd=="DOWNLOAD":
+            fname=data[1]
+            fsize=data[2]
+            dest=data[3] 
+
+            server_path = os.path.join(SERVER_DATA_PATH, fname)
+            print("Server path:"+ server_path)
+
+            with open(f"{server_path}", "rb") as f:         #reading in file with bytes
+                pro = 0
+                while pro<fsize:                #check if the file is done reading
+                    file_data=f.read(fsize)
+                    conn.sendall(file_data)
+                    pro += len(file_data)
+            f.close()
 
 
         elif cmd=="DELETE":
