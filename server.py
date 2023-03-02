@@ -3,7 +3,7 @@ import socket
 import threading
 
 IP=socket.gethostname()
-Port=4476
+Port=4473
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
@@ -48,20 +48,18 @@ def handle_client(conn,addr):
                 client_data = data[1].split(",")
                 file_name = client_data[0]
                 file_size = int(client_data[1])
+                print(f"File Size:{file_size}")
                 filepath = os.path.join(SERVER_DATA_PATH, file_name)
-                received_size=0
-                output_file=b''
                 print("File Name:"+file_name)
                 print(f"File Size:{file_size}")
-                while received_size<file_size:
-                    file_data=conn.recv(SIZE)
-                    print("inside loop")
-                    output_file+=file_data
-                    received_size+=len(file_data)
-                    print(file_data)
-                print(f"received size:{received_size}")
+
                 with open(filepath, "wb") as f:
-                    f.write(output_file)
+                    count=0
+                    while count<file_size:
+                        file_data = conn.recv(file_size)
+                        f.write(file_data)
+                        count+=len(file_data)
+                f.close()
                 send_data="OK@File uploaded."
                 conn.send(send_data.encode(FORMAT))
 

@@ -4,7 +4,7 @@ import socket
 
 
 IP=socket.gethostname()
-Port=4476
+Port=4473
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
@@ -43,50 +43,17 @@ def main():
            path=data[1]
            file_name=data[1].split('/')[-1]
            file_size=os.path.getsize(path)
+           print(f"File Size:{file_size}")
            data_obtained = cmd
            data_obtained += f'@{file_name},{str(file_size)}'
-           client.send(data_obtained.encode())
-           send_size=0
-           output=b''
-           with open(f"{path}","rb") as f:
-                print("Inside the Open function")
-                while send_size<file_size:
-                    file_data=f.read(SIZE)
-                    print("Read")
-                    output+=file_data
-                    client.sendall(file_data)
-                    send_size+=len(output)
-                    
-           
-
-           
-
-
-            ##Upload@filename@text
-           """ print("inside upload in the client side")
-            path=data[1]
-            file_name=data[1].split('/')[-1]
-            f = open(file_name, "rb")
-            text=f.read()
-            file_size=os.path.getsize(path)
-            data_obtained=cmd
-            data_obtained+=f'@{file_name},{str(file_size)}'
-            client.send(data_obtained.encode())
-            client.sendall(text)
-        
-            print("File has been sent")
-
-            //different code
-
-        
-            path=data[1]
-            with open(f"{path}","r") as f:
-                text=f.read()
-            #clientdata,data.txt
-            filename=path.split('/')[-1]
-            send_data=f"{cmd}@{filename}@{text}"
-            client.send(send_data.encode(FORMAT))
-            """
+           client.sendall(data_obtained.encode())
+           with open(f"{path}", "rb") as f:
+               pro = 0
+               while pro<file_size:
+                file_data=f.read(file_size)
+                client.sendall(file_data)
+                pro += len(file_data)
+           f.close()
         elif cmd=="DELETE":
             client.send(f"{cmd}@{data[1]}".encode(FORMAT))
         
