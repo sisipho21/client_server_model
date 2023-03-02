@@ -24,6 +24,7 @@ def main():
             print(f"{msg}")
             break
 
+
         data=input("> ")
         data=data.split(" ")
         cmd=data[0].upper()
@@ -42,7 +43,7 @@ def main():
         elif cmd=="UPLOAD":
            hasher = hashlib.md5()       #Checking for file correctness
            path = data[1]               #File data Path
-           password = data[2]                #File data password for encrypted portion
+           #password = data[2]                #File data password for encrypted portion
            with open(f"{path}", "rb") as f:
                content = f.read()
                hasher.update(content)
@@ -85,6 +86,10 @@ def main():
 
         elif cmd=="DELETE":
             client.send(f"{cmd}@{data[1]}".encode(FORMAT))
+
+        else:
+            print("You entered an invalid command. Here is a list of commands below:")
+            client.send("HELP".encode(FORMAT))
         
         
     print("Disconnected from the server.")

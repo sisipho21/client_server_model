@@ -11,10 +11,20 @@ FORMAT="utf-8"
 SERVER_DATA_PATH="server_data"
 file_text=""
 
+def help_string():
+    send_data="OK@"
+    send_data+="LIST: List all the files from the server.\n"
+    send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
+    send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
+    send_data+="DELETE <filename>: Delete a file from the server.\n"
+    send_data+="LOGOUT: Disconnect from the server.\n"
+    send_data+="HELP:List all the commands."
+    return send_data
+
 def handle_client(conn,addr):
     print(f"[New CONNECTION] {addr} connected.")
-    conn.send("OK@Welcome to the File Server".encode(FORMAT))
-
+    conn.send("OK@Welcome to the File Server. Enter 'help'.".encode(FORMAT))
+    
     while True:
         data=conn.recv(SIZE).decode()
         if(data.split("@")=="UPLOAD"):
@@ -25,14 +35,8 @@ def handle_client(conn,addr):
         data=data.split("@")
         cmd=data[0]
         if(cmd=="HELP"):
-            send_data="OK@"
-            send_data+="LIST: List all the files from the server.\n"
-            send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
-            send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
-            send_data+="DELETE <filename>: Delete a file from the server.\n"
-            send_data+="LOGOUT: Disconnect from the server.\n"
-            send_data+="HELP:List all the commands."
-            conn.send(send_data.encode(FORMAT))
+            help_data = help_string()
+            conn.send(help_data.encode(FORMAT))
 
         elif cmd=="LOGOUT":
             break
@@ -47,8 +51,6 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
         elif cmd=="UPLOAD":
-               
-
                 
                 client_data = data[1].split(",")
                 file_name = client_data[0]
@@ -58,7 +60,6 @@ def handle_client(conn,addr):
                 filepath = os.path.join(SERVER_DATA_PATH, file_name)
                 print("File Name:"+file_name)
                 print(f"File Size:{file_size}")
-
 
                 with open(filepath, "wb") as f:
                     count=0
@@ -100,6 +101,9 @@ def handle_client(conn,addr):
                     conn.sendall(file_data)     #keep on sending file data to client until file end
                     pro += len(file_data)
             f.close()
+
+            send_data="OK@File downloaded."
+            conn.send(send_data.encode(FORMAT))
 
 
         elif cmd=="DELETE":
