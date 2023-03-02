@@ -11,7 +11,8 @@ FORMAT="utf-8"
 SERVER_DATA_PATH="server_data"
 file_text=""
 
-def help_string():
+#function returning the help string with commands for user to enter
+def help_string():                      
     send_data="OK@"
     send_data+="LIST: List all the files from the server.\n"
     send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
@@ -21,6 +22,7 @@ def help_string():
     send_data+="HELP:List all the commands."
     return send_data
 
+#function used by the server to handle commands and messages from the client
 def handle_client(conn,addr):
     print(f"[New CONNECTION] {addr} connected.")
     conn.send("OK@Welcome to the File Server. Enter 'help'.".encode(FORMAT))
@@ -32,16 +34,18 @@ def handle_client(conn,addr):
             file_text=conn.recv(SIZE).decode(FORMAT)
             print("Text of second file")
             print(file_text.decode(FORMAT))
-        data=data.split("@")
+
+        data=data.split("@")            #splitting message/data from the client with '@' delimeter to obtain the command and other important information
         cmd=data[0]
-        if(cmd=="HELP"):
+
+        if(cmd=="HELP"):                #if command is 'help', send text from help_string function for client to print
             help_data = help_string()
             conn.send(help_data.encode(FORMAT))
 
-        elif cmd=="LOGOUT":
+        elif cmd=="LOGOUT":             #if cmd is 'logout', exit while loop to disconnect with the client
             break
 
-        elif cmd=="LIST":
+        elif cmd=="LIST":               #if cmd is 'list', server checks if it has files, and sends them to the client to display them
             files=os.listdir(SERVER_DATA_PATH)
             send_data="OK@"
             if(len(files)==0):
@@ -50,8 +54,7 @@ def handle_client(conn,addr):
                 send_data+="\n".join(f for f in files)
             conn.send(send_data.encode(FORMAT))
 
-        elif cmd=="UPLOAD":
-                
+        elif cmd=="UPLOAD":             #if 'upload', the server takes in the file name and size, and uses these to create a new file in the server that writes to all the data
                 client_data = data[1].split(",")
                 file_name = client_data[0]
                 file_size = int(client_data[1])
@@ -83,7 +86,7 @@ def handle_client(conn,addr):
                 send_data="OK@File uploaded."
                 conn.send(send_data.encode(FORMAT))
 
-        elif cmd=="DOWNLOAD":
+        elif cmd=="DOWNLOAD":           #if 'download', the server sends the file size and data to the client so it creates on its side
             fname=data[1]
             
             server_path = os.path.join(SERVER_DATA_PATH, fname)     #path where the file is in the server
@@ -106,7 +109,7 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
 
-        elif cmd=="DELETE":
+        elif cmd=="DELETE":                     #if 'delete', server checks if the file exists and deletes it from the server
             files=os.listdir(SERVER_DATA_PATH)
             send_data="OK@"
             filename=data[1]
@@ -121,23 +124,22 @@ def handle_client(conn,addr):
                     send_data+="File not found."
             conn.send(send_data.encode(FORMAT))
 
-
-
-
-
-    print(f'[Disconnected] {addr} Disconnected')
+    print(f'[Disconnected] {addr} Disconnected')        #feedback when connection is terminated with the client
 
 def main():
+    #server creates its socket and listens for connections from clients
     print(f"[STARTING] Server is starting.")
     server=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server.bind(ADDR)
-    server.listen()
+    server.listen()             
     print("[LISTENING] Server is listening")
 
+    #running infinitely, the server accepts connections from clients, and uses a thread to create a socket for each client, where they communicate
     while True:
         conn,addr=server.accept()
-        thread=threading.Thread(target=handle_client,args=(conn,addr))
+        thread=threading.Thread(target=handle_client,args=(conn,addr))      #the thread uses the handle_client method for communication with the client
         thread.start()
+
 if __name__ =="__main__":
     main()
 
