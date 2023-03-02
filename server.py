@@ -81,17 +81,20 @@ def handle_client(conn,addr):
 
         elif cmd=="DOWNLOAD":
             fname=data[1]
-            fsize=data[2]
-            dest=data[3] 
-
-            server_path = os.path.join(SERVER_DATA_PATH, fname)
+            
+            server_path = os.path.join(SERVER_DATA_PATH, fname)     #path where the file is in the server
             print("Server path:"+ server_path)
+
+            fsize = os.path.getsize(server_path)            #size of the requested file from the server
+            print("File size:"+ str(fsize))
+
+            conn.send(str(fsize).encode(FORMAT))            #sending file size to the client
 
             with open(f"{server_path}", "rb") as f:         #reading in file with bytes
                 pro = 0
                 while pro<fsize:                #check if the file is done reading
                     file_data=f.read(fsize)
-                    conn.sendall(file_data)
+                    conn.sendall(file_data)     #keep on sending file data to client until file end
                     pro += len(file_data)
             f.close()
 

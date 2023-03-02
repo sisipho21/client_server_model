@@ -64,18 +64,23 @@ def main():
            f.close()
 
         elif cmd=="DOWNLOAD":
-            ##Download filename directory 
-            fname = data[1]
-            path = data[2]
+            fname = data[1]                 #name of file
+            path = data[2]                  #path to save file to
             
-            outputpath=os.path.join(path,fname)         #output path for the ne file
-
-            #with open(f"{filepath}","r") as f:
-            #    text=f.read()
-            #clientdata,data.txt
-            #filename=path.split('/')[-1]
-            send_data=f"{cmd}@{fname}@{path}@{text}"
+            send_data=f"{cmd}@{fname}"      #send name of file to server
             client.send(send_data.encode(FORMAT))
+
+            outputpath=os.path.join(path,fname)         #output path for the file, where it will be saved
+
+            fsize = int(client.recv(SIZE))                   #receive file size
+
+            with open(outputpath, "wb") as f:
+                count=0
+                while count<fsize:
+                    file_data = client.recv(fsize)
+                    f.write(file_data)
+                    count+=len(file_data)
+            f.close()
 
         elif cmd=="DELETE":
             client.send(f"{cmd}@{data[1]}".encode(FORMAT))
