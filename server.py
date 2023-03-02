@@ -1,9 +1,10 @@
 import os
 import socket
 import threading
+import hashlib
 
 IP=socket.gethostname()
-Port=4473
+Port=4474
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
@@ -45,20 +46,15 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
         elif cmd=="UPLOAD":
-                fp = input("Would you like file protected? Type 'yes/no':").lower()
-                
-
-                if fp == "yes":
-                    password=input("Enter Password:")
-
-
                 client_data = data[1].split(",")
                 file_name = client_data[0]
                 file_size = int(client_data[1])
+                hasher_client=client_data[2]
                 print(f"File Size:{file_size}")
                 filepath = os.path.join(SERVER_DATA_PATH, file_name)
                 print("File Name:"+file_name)
                 print(f"File Size:{file_size}")
+
 
                 with open(filepath, "wb") as f:
                     count=0
@@ -66,14 +62,23 @@ def handle_client(conn,addr):
                         file_data = conn.recv(file_size)
                         f.write(file_data)
                         count+=len(file_data)
-
-                    #For encrypted files
-                    if fp == "yes":
-                        f.encrypt(password)
-
                 f.close()
+
+                hasher_server = hashlib.md5()
+                with open(f"{filepath}", "rb") as f:
+                    content = f.read()
+                    hasher_server.update(content)
+                f.close()
+                if(hasher_client==hasher_server.hexdigest()):
+                    print("File was sent successfully without being altered")
+                else:
+                    print("File was altered when sent")
+
+
                 send_data="OK@File uploaded."
                 conn.send(send_data.encode(FORMAT))
+
+
 
         elif cmd=="DELETE":
             files=os.listdir(SERVER_DATA_PATH)
@@ -89,6 +94,8 @@ def handle_client(conn,addr):
                 else:
                     send_data+="File not found."
             conn.send(send_data.encode(FORMAT))
+
+
 
 
 

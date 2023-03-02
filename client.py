@@ -1,10 +1,11 @@
 import os
 import socket
+import hashlib
 
 
 
 IP=socket.gethostname()
-Port=4473
+Port=4474
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
@@ -39,21 +40,31 @@ def main():
             pass
 
         elif cmd=="UPLOAD":
-           
-           path=data[1]
+           hasher = hashlib.md5()
+           path = data[1]
+           with open(f"{path}", "rb") as f:
+               content = f.read()
+               hasher.update(content)
+           print(hasher.hexdigest())
            file_name=data[1].split('/')[-1]
            file_size=os.path.getsize(path)
            print(f"File Size:{file_size}")
            data_obtained = cmd
-           data_obtained += f'@{file_name},{str(file_size)}'
+           data_obtained += f'@{file_name},{str(file_size)},{hasher.hexdigest()}'
            client.sendall(data_obtained.encode())
+
+
            with open(f"{path}", "rb") as f:
-               pro = 0
-               while pro<file_size:
+               count = 0
+               while count<file_size:
                 file_data=f.read(file_size)
+
                 client.sendall(file_data)
-                pro += len(file_data)
+                count += len(file_data)
            f.close()
+
+
+
         elif cmd=="DELETE":
             client.send(f"{cmd}@{data[1]}".encode(FORMAT))
         
