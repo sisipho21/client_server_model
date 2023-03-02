@@ -45,6 +45,13 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
         elif cmd=="UPLOAD":
+                fp = input("Would you like file protected? Type 'yes/no':").lower()
+                
+
+                if fp == "yes":
+                    password=input("Enter Password:")
+
+
                 client_data = data[1].split(",")
                 file_name = client_data[0]
                 file_size = int(client_data[1])
@@ -59,6 +66,11 @@ def handle_client(conn,addr):
                         file_data = conn.recv(file_size)
                         f.write(file_data)
                         count+=len(file_data)
+
+                    #For encrypted files
+                    if fp == "yes":
+                        f.encrypt(password)
+
                 f.close()
                 send_data="OK@File uploaded."
                 conn.send(send_data.encode(FORMAT))
