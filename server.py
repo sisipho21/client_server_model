@@ -89,23 +89,34 @@ def handle_client(conn,addr):
         elif cmd=="DOWNLOAD":           #if 'download', the server sends the file size and data to the client so it creates on its side
             fname=data[1]
             
-            server_path = os.path.join(SERVER_DATA_PATH, fname)     #path where the file is in the server
-            print("Server path:"+ server_path)
+            send_data = "OK@"
 
-            fsize = os.path.getsize(server_path)            #size of the requested file from the server
-            print("File size:"+ str(fsize))
+            files=os.listdir(SERVER_DATA_PATH)
+            if len(files)==0:
+                send_data+="The Server directory is empty"
 
-            conn.send(str(fsize).encode(FORMAT))            #sending file size to the client
+            elif not fname in files:
+                send_data+="File not found on server"
 
-            with open(f"{server_path}", "rb") as f:         #reading in file with bytes
-                pro = 0
-                while pro<fsize:                #check if the file is done reading
-                    file_data=f.read(fsize)
-                    conn.sendall(file_data)     #keep on sending file data to client until file end
-                    pro += len(file_data)
-            f.close()
+            else:
+                server_path = os.path.join(SERVER_DATA_PATH, fname)     #path where the file is in the server
+                print("Server path:"+ server_path)
 
-            send_data="OK@File downloaded."
+                fsize = os.path.getsize(server_path)            #size of the requested file from the server
+                print("File size:"+ str(fsize))
+
+                conn.send(str(fsize).encode(FORMAT))            #sending file size to the client
+
+                with open(f"{server_path}", "rb") as f:         #reading in file with bytes
+                    pro = 0
+                    while pro<fsize:                #check if the file is done reading
+                        file_data=f.read(fsize)
+                        conn.sendall(file_data)     #keep on sending file data to client until file end
+                        pro += len(file_data)
+                f.close()
+
+                send_data +="File downloaded."
+                
             conn.send(send_data.encode(FORMAT))
 
 
