@@ -40,13 +40,14 @@ def main():
             pass
 
         elif cmd=="UPLOAD":
-           hasher = hashlib.md5()
-           path = data[1]
+           hasher = hashlib.md5()       #Checking for file correctness
+           path = data[1]               #File data Path
+           password = data[2]                #File data password for encrypted portion
            with open(f"{path}", "rb") as f:
                content = f.read()
                hasher.update(content)
            print(hasher.hexdigest())
-           file_name=data[1].split('/')[-1]
+           file_name=path.split('/')[-1]     #Getting Filename from url
            file_size=os.path.getsize(path)
            print(f"File Size:{file_size}")
            data_obtained = cmd
@@ -54,7 +55,7 @@ def main():
            client.sendall(data_obtained.encode())
 
 
-           with open(f"{path}", "rb") as f:
+           with open(f"{path}", "rb") as f:     #Reading file onto uploaded version
                count = 0
                while count<file_size:
                 file_data=f.read(file_size)

@@ -27,7 +27,7 @@ def handle_client(conn,addr):
         if(cmd=="HELP"):
             send_data="OK@"
             send_data+="LIST: List all the files from the server.\n"
-            send_data+="UPLOAD <path>:Upload a file to the server.\n"
+            send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
             send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
             send_data+="DELETE <filename>: Delete a file from the server.\n"
             send_data+="LOGOUT: Disconnect from the server.\n"
@@ -47,6 +47,9 @@ def handle_client(conn,addr):
             conn.send(send_data.encode(FORMAT))
 
         elif cmd=="UPLOAD":
+               
+
+                
                 client_data = data[1].split(",")
                 file_name = client_data[0]
                 file_size = int(client_data[1])
