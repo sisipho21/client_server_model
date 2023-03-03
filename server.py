@@ -59,6 +59,7 @@ def handle_client(conn,addr):
                 file_name = client_data[0]
                 file_size = int(client_data[1])
                 hasher_client=client_data[2]
+
                 print(f"File Size:{file_size}")
                 filepath = os.path.join(SERVER_DATA_PATH, file_name)
                 print("File Name:"+file_name)
@@ -80,7 +81,7 @@ def handle_client(conn,addr):
                 if(hasher_client==hasher_server.hexdigest()):
                     print("File was sent successfully without being altered")
                 else:
-                    print("File was altered when sent")
+                    print("File was altered during uploading")
 
 
                 send_data="OK@File uploaded."
@@ -92,20 +93,25 @@ def handle_client(conn,addr):
             send_data = "OK@"
 
             files=os.listdir(SERVER_DATA_PATH)
-            if len(files)==0:
+            if len(files)==0:           #if there are no files in server directory
                 send_data+="The Server directory is empty"
 
-            elif not fname in files:
+            elif not fname in files:    #if file is not found
                 send_data+="File not found on server"
 
-            else:
+            else:                       #if file is found in server directory
                 server_path = os.path.join(SERVER_DATA_PATH, fname)     #path where the file is in the server
                 print("Server path:"+ server_path)
 
                 fsize = os.path.getsize(server_path)            #size of the requested file from the server
                 print("File size:"+ str(fsize))
 
-                conn.send(str(fsize).encode(FORMAT))            #sending file size to the client
+                dld_svr_hash = hashlib.md5()        #hash variable for file in server
+                with open(f"{server_path}", "rb") as f:
+                    hash_content = f.read()
+                    dld_svr_hash.update(hash_content)
+
+                conn.send(f"{str(fsize)}@{dld_svr_hash.hexdigest()}".encode(FORMAT))            #sending file size to the client
 
                 with open(f"{server_path}", "rb") as f:         #reading in file with bytes
                     pro = 0
@@ -113,10 +119,11 @@ def handle_client(conn,addr):
                         file_data=f.read(fsize)
                         conn.sendall(file_data)     #keep on sending file data to client until file end
                         pro += len(file_data)
+
                 f.close()
 
                 send_data +="File downloaded."
-                
+
             conn.send(send_data.encode(FORMAT))
 
 

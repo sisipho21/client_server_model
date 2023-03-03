@@ -75,7 +75,10 @@ def main():
 
             outputpath=os.path.join(path,fname)         #output path for the file, where it will be saved
 
-            fsize = int(client.recv(SIZE))              #receive file size from the server
+            server_info = client.recv(SIZE).decode()
+            fsize, server_hash = server_info.split('@')
+
+            fsize = int(fsize)              #receive file size from the server
 
             with open(outputpath, "wb") as f:           #write the file data into the path of user, getting the data from server until the whole file size has been received 
                 count=0
@@ -83,6 +86,18 @@ def main():
                     file_data = client.recv(fsize)
                     f.write(file_data)
                     count+=len(file_data)
+
+            dld_clnt_hash = hashlib.md5()        #hash variable for file in client directory
+            with open(f"{outputpath}", "rb") as f:
+                hash_content = f.read()
+                dld_clnt_hash.update(hash_content)
+
+            #compare server hash and client hash to see if they are the same
+            if dld_clnt_hash == server_hash:
+                print("File downloaded without alterations")
+            else:
+                print("File altered during downloading process")
+
             f.close()                       #close f when done wrting to the file
 
         elif cmd=="DELETE":                 #if cmd is delete, capture name of file to be deleted, and send it to server
