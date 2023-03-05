@@ -39,31 +39,36 @@ def main():
             pass
 
         elif cmd=="UPLOAD":         #if cmd is upload, we must obtain the user's path to the file and send it to the server
-            hasher = hashlib.md5()               #used for checking for file correctness after uploading
-            path = data[1]                       #File data Path
-           
-            with open(f"{path}", "rb") as f:    
-                content = f.read()
-                hasher.update(content)
-            print(hasher.hexdigest())
+           user_email=input("Enter Email: ")
+           user_password=input("Enter Password: ")
+           path = data[1]
+           file_name = path.split('/')[-1]
+           file_size = os.path.getsize(path)
+           hasher = hashlib.md5()
+           with open(f"{path}", "rb") as f:
+               content = f.read()
+               hasher.update(content)
 
-            file_name=path.split('/')[-1]        #Getting Filename from url
+           data_obtained = cmd
+           if(len(data)==3):
+               data_obtained += f'@{file_name},{str(file_size)},{hasher.hexdigest()},'
+               data_obtained += f'{user_email},{user_password},{data[2]}'
+           else:
+                data_obtained += f'@{file_name},{str(file_size)},{hasher.hexdigest()},'
+                data_obtained += f'{user_email},{user_password}'
 
-            file_size=os.path.getsize(path)
-            print(f"File Size:{file_size}")
+           print(f"File Size:{file_size}")
+           client.sendall(data_obtained.encode())
 
-            data_obtained = cmd
-            data_obtained += f'@{file_name},{str(file_size)},{hasher.hexdigest()}'
-            client.sendall(data_obtained.encode())      #send file name, size, and its hash sequence to server for upload
+           with open(f"{path}", "rb") as f:
+               count = 0
+               while count<file_size:
+                file_data=f.read(file_size)
 
-
-            with open(f"{path}", "rb") as f:     #Reading file onto uploaded version
-                count = 0
-                while count<file_size:
-                    file_data=f.read(file_size)
-                    client.sendall(file_data)
-                    count += len(file_data)
-            f.close()
+                client.sendall(file_data)
+                count += len(file_data)
+           f.close()
+            
 
         #if cmd is download, the name of file to be downloaded must be captured, with the directory it must be saved to
         elif cmd=="DOWNLOAD":               
