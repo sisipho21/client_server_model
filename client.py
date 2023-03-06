@@ -3,7 +3,7 @@ import socket
 import hashlib
 
 IP=socket.gethostname()
-Port=4474
+Port=4458
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"

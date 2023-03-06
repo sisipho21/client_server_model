@@ -16,7 +16,7 @@ file_text=""
 def generate_key(username, password):
     # Generate a key from the username and password
     key = Fernet.generate_key()
-    filepath="server_data/keys/"+username+"_key.key"
+    filepath="server_data/keys/"+username+"_key.key" #store key in this file path
     with open(filepath, 'wb') as file:
         file.write(key)
 
@@ -88,7 +88,7 @@ def write_to_file(filename, *args, append=False):
 def help_string():                      
     send_data="OK@"
     send_data+="LIST: List all the files from the server.\n"
-    send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
+    send_data+="UPLOAD <path> <Optional : E>:Upload a file to the server.\n"
     send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
     send_data+="DELETE <filename>: Delete a file from the server.\n"
     send_data+="LOGOUT: Disconnect from the server.\n"
@@ -139,13 +139,13 @@ def handle_client(conn,addr):
                 user_email=client_data[3]
                 user_password=client_data[4]
 
-                if(len(command_encrypt)==0):
+                if(len(command_encrypt)==0):            #if there is no encryption
                     filepath = os.path.join(SERVER_DATA_PATH, file_name)
                     print("File Name:"+file_name)
                     print(f"File Size:{file_size}")
 
 
-                    with open(filepath, "wb") as f:
+                    with open(filepath, "wb") as f:     #writing out file in bytes to the server public file folder
                         count=0
                         while count<file_size:
                             file_data = conn.recv(file_size)
@@ -153,7 +153,7 @@ def handle_client(conn,addr):
                             count+=len(file_data)
                     f.close()
 
-                    hasher_server = hashlib.md5()
+                    hasher_server = hashlib.md5()       #generating hash to compare files after uploading the file to the server
                     with open(f"{filepath}", "rb") as f:
                         content = f.read()
                         hasher_server.update(content)
@@ -161,11 +161,11 @@ def handle_client(conn,addr):
                     if(hasher_client==hasher_server.hexdigest()):
                         print("File was sent successfully without being altered")
                     else:
-                        print("File was altered when sent")
+                        print("File was altered during sending")
                 
-                elif(len(command_encrypt)>=1):
+                elif(len(command_encrypt)>=1):          #if file needs to be encrytpted
                     if(command_encrypt=="E"):
-                        destination="server_data/protected_data/"+file_name
+                        destination="server_data/protected_data/"+file_name         #store in secure folder
                         with open(destination, "wb") as f:
                             count=0
                             while count<file_size:
@@ -174,9 +174,9 @@ def handle_client(conn,addr):
                                 count+=len(file_data)
                         f.close()
 
-                        protected_name=encrypt_file(user_email,user_password,file_name)
+                        protected_name=encrypt_file(user_email,user_password,file_name) #encrypting the file
                         protected_name=protected_name.split("/")[-1]
-                        data_write=f"{user_email},{user_password},{protected_name}"
+                        data_write=f"{user_email},{user_password},{protected_name}"     #keeping track of the file name
                         write_to_file("protected.txt",data_write,append=True)
                         
                         #Delete the duplicate File
@@ -204,8 +204,9 @@ def handle_client(conn,addr):
             
             send_data = "OK@"
 
-            files=os.listdir(SERVER_DATA_PATH)
-            if len(files)==0:           #if there are no files in server directory
+            public_files=os.listdir(SERVER_DATA_PATH)
+            protected_files=os.listdir("server_data/protected_data/")
+            if len(public_files)==0:           #if there are no files in public server directory
                 send_data+="The Server directory is empty"
 
             elif not fname in files:    #if file is not found
