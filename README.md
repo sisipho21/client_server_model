@@ -13,3 +13,4 @@ Included files
 --------------
 This README, server.py, client.py.
 Also includes folders like server_data, which is where the server stores files that have been uploaded to it.
+A folder named MMBPRO002 is also included to run the server and client in a different way. It uses a GUI to communicate with the user.
