@@ -5,28 +5,54 @@ import hashlib
 from cryptography.fernet import Fernet
 
 IP=socket.gethostname()
-Port=4458
+Port=7700
 ADDR=(IP,Port)
 SIZE=1024
 FORMAT="utf-8"
 SERVER_DATA_PATH="server_data/public_files"
 file_text=""
+visible_name=""
 
 
+
+def DeleteFile(privatefile):
+    SERVER_DATA="server_data/public_files"
+    files = os.listdir(SERVER_DATA)
+    filename = privatefile
+
+    if len(files) == 0:
+        return
+    else:
+        if filename in files:
+            os.system(f"rm {SERVER_DATA}/{filename}")
+            print("File deleted.")
+            return
+        else:
+
+            return
+def CheckHiddenFile(user_email,user_password):
+    with open('server_data/protected_data/protected.txt', 'r') as file:
+        for line in file:
+            user_data = line.strip().split(",")
+            if(user_data[0]==user_email):
+                if(user_data[1]==user_password):
+                    return user_data[2]
+    return ""
+##Generates functions using the username and surname
 def generate_key(username, password):
     # Generate a key from the username and password
     key = Fernet.generate_key()
-    filepath="server_data/keys/"+username+"_key.key" #store key in this file path
+    filepath="server_data/keys/"+username+"_key.key"
     with open(filepath, 'wb') as file:
         file.write(key)
-
+#Loadkeys from their destination to validate the files
 def load_key(username):
     # Load the key from the file
     filepath="server_data/keys/"+username+"_key.key"
     with open(filepath, 'rb') as file:
         key = file.read()
     return key
-
+#encrypts the file to a specific destination
 def encrypt_file(username, password, filename):
     f_name=filename
     path="server_data/protected_data/"+filename
@@ -53,8 +79,9 @@ def encrypt_file(username, password, filename):
 
     return encrypted_filename
 
+#Decrypts the file from the the path  server_data/protected_data/
 def decrypt_file(username, password, encrypted_filename):
-    path="client_data/hidden_data/"+encrypted_filename
+    path="server_data/protected_data/"+encrypted_filename
     encrypted_filename=path
     # Load the key from the file
     key = load_key(username)
@@ -68,14 +95,17 @@ def decrypt_file(username, password, encrypted_filename):
     decrypted_data = f.decrypt(encrypted_data)
 
     # Write the decrypted data to a new file
-    decrypted_filename = f"{os.path.splitext(encrypted_filename)[0]}_decrypted{os.path.splitext(encrypted_filename)[1]}"
+    raw_name=os.path.splitext(encrypted_filename)[0].split("/")[-1].split("_")[0]
+    path="server_data/public_files/"+raw_name
+    print(path)
+    decrypted_filename = f"{path}_decrypted{os.path.splitext(encrypted_filename)[1]}"
 
     with open(decrypted_filename, 'wb') as file:
         file.write(decrypted_data)
 
     return decrypted_filename
 
-
+#creates the textfile which is used to manage information relating to the encrypted files
 def write_to_file(filename, *args, append=False):
     mode = "a" if append else "w"
     path="server_data/protected_data/"+filename
@@ -88,7 +118,7 @@ def write_to_file(filename, *args, append=False):
 def help_string():                      
     send_data="OK@"
     send_data+="LIST: List all the files from the server.\n"
-    send_data+="UPLOAD <path> <Optional : E>:Upload a file to the server.\n"
+    send_data+="UPLOAD <path> <Optional : Private Key>:Upload a file to the server.\n"
     send_data+="DOWNLOAD <filename> <local directory to save file>:Download a file from the server to your specified directory.\n"
     send_data+="DELETE <filename>: Delete a file from the server.\n"
     send_data+="LOGOUT: Disconnect from the server.\n"
@@ -119,13 +149,36 @@ def handle_client(conn,addr):
             break
 
         elif cmd=="LIST":               #if cmd is 'list', server checks if it has files, and sends them to the client to display them
-            files=os.listdir(SERVER_DATA_PATH)
-            send_data="OK@"
-            if(len(files)==0):
-                send_data+="The server directory is empty."
-            else:
-                send_data+="\n".join(f for f in files)
-            conn.send(send_data.encode(FORMAT))
+            client_mail=data[1].split(",")[0]
+            client_password=data[1].split(",")[1]
+            PrivateFileName=CheckHiddenFile(client_mail,client_password)
+            print("Email Of Client "+client_mail)
+            print("Password Of Client "+client_password)
+            print("Name Of Private File "+PrivateFileName)
+            if(len(PrivateFileName)==0):
+
+                files = os.listdir(SERVER_DATA_PATH)
+                send_data = "OK@"
+                if (len(files) == 0):
+                    send_data += "The server directory is empty."
+                else:
+                    send_data += "\n".join(f for f in files)
+                conn.send(send_data.encode(FORMAT))
+            elif len(PrivateFileName)>0:
+                print("Inside Decryption")
+                file_public=decrypt_file(client_mail,client_password,PrivateFileName)
+                file_public=file_public.split("/")[-1]
+                print("Name Of decrypted file:"+file_public)
+                files = os.listdir(SERVER_DATA_PATH)
+                send_data = "OK@"
+                if (len(files) == 0):
+                    send_data += "The server directory is empty."
+                else:
+                    send_data += "\n".join(f for f in files)
+                DeleteFile(file_public)
+                conn.send(send_data.encode(FORMAT))
+
+
 
         elif cmd=="UPLOAD":             #if 'upload', the server takes in the file name and size, and uses these to create a new file in the server that writes to all the data
                 command_encrypt=f""
@@ -139,13 +192,13 @@ def handle_client(conn,addr):
                 user_email=client_data[3]
                 user_password=client_data[4]
 
-                if(len(command_encrypt)==0):            #if there is no encryption
+                if(len(command_encrypt)==0):
                     filepath = os.path.join(SERVER_DATA_PATH, file_name)
                     print("File Name:"+file_name)
                     print(f"File Size:{file_size}")
 
 
-                    with open(filepath, "wb") as f:     #writing out file in bytes to the server public file folder
+                    with open(filepath, "wb") as f:
                         count=0
                         while count<file_size:
                             file_data = conn.recv(file_size)
@@ -153,7 +206,7 @@ def handle_client(conn,addr):
                             count+=len(file_data)
                     f.close()
 
-                    hasher_server = hashlib.md5()       #generating hash to compare files after uploading the file to the server
+                    hasher_server = hashlib.md5()
                     with open(f"{filepath}", "rb") as f:
                         content = f.read()
                         hasher_server.update(content)
@@ -161,11 +214,11 @@ def handle_client(conn,addr):
                     if(hasher_client==hasher_server.hexdigest()):
                         print("File was sent successfully without being altered")
                     else:
-                        print("File was altered during sending")
+                        print("File was altered when sent")
                 
-                elif(len(command_encrypt)>=1):          #if file needs to be encrytpted
+                elif(len(command_encrypt)>=1):
                     if(command_encrypt=="E"):
-                        destination="server_data/protected_data/"+file_name         #store in secure folder
+                        destination="server_data/protected_data/"+file_name
                         with open(destination, "wb") as f:
                             count=0
                             while count<file_size:
@@ -174,9 +227,9 @@ def handle_client(conn,addr):
                                 count+=len(file_data)
                         f.close()
 
-                        protected_name=encrypt_file(user_email,user_password,file_name) #encrypting the file
+                        protected_name=encrypt_file(user_email,user_password,file_name)
                         protected_name=protected_name.split("/")[-1]
-                        data_write=f"{user_email},{user_password},{protected_name}"     #keeping track of the file name
+                        data_write=f"{user_email},{user_password},{protected_name}"
                         write_to_file("protected.txt",data_write,append=True)
                         
                         #Delete the duplicate File
@@ -200,13 +253,24 @@ def handle_client(conn,addr):
                 conn.send(send_data.encode(FORMAT))
 
         elif cmd=="DOWNLOAD":           #if 'download', the server sends the file size and data to the client so it creates on its side
-            fname=data[1]
-            
+            data_length=data[1].split(",")
+            delete_file=""
+
+            if(len(data_length)==4):
+                fname=data_length[0]
+                protectedfilename=data_length[0].split("/")[-1].split(".")[0].split("_")[0]
+                protectedfileextension=data_length[0].split("/")[-1].split(".")[1]
+                protectedfilename=protectedfilename+"_encrypted."+protectedfileextension
+
+                visible_name=decrypt_file(data_length[1],data_length[2],protectedfilename)
+                print("File Downloaded")
+
+            else:
+                fname=data[1]
             send_data = "OK@"
 
-            public_files=os.listdir(SERVER_DATA_PATH)
-            protected_files=os.listdir("server_data/protected_data/")
-            if len(public_files)==0:           #if there are no files in public server directory
+            files=os.listdir(SERVER_DATA_PATH)
+            if len(files)==0:           #if there are no files in server directory
                 send_data+="The Server directory is empty"
 
             elif not fname in files:    #if file is not found
@@ -234,8 +298,12 @@ def handle_client(conn,addr):
                         pro += len(file_data)
 
                 f.close()
+                if (len(data_length) == 4):
+
+                    DeleteFile(fname)
 
                 send_data +="File downloaded."
+
 
             conn.send(send_data.encode(FORMAT))
 
